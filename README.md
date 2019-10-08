@@ -14,7 +14,7 @@
 ![image](https://github.com/daswedishchef/PER-carlsosp/blob/master/Image2.jpg)
 - Arduino UNO
 - Adatafruit GPS/SD shield
-- Active antenna
+- Reed Switch
 - ID12LA RFID
 - ID12LA usb breakout
 - Temperature sensor
