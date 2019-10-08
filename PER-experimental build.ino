@@ -9,7 +9,7 @@
 /////////////////////////
 // Keep in mind, the SD library has max file name lengths of 8.3 - 8 char prefix,
 // and a 3 char suffix.
-// Our log files are called "PERlogXX.csv, so "gpslog99.csv" is our max file.
+// Our log files are called "PERlogXX.csv, so "PERlog99.csv" is our max file.
 #define LOG_FILE_PREFIX "PERlog" // Name of the log file.
 #define MAX_LOG_FILES 100 // Number of log files that can be made
 #define LOG_FILE_SUFFIX "csv" // Suffix of the log file
@@ -32,39 +32,39 @@ unsigned long lastLog = 0;
 int fishCnt = 0;
 bool tagRead = false;
 byte tagID[12];
-/////////////////////////
-// TinyGPS Definitions //
-/////////////////////////
+
 TinyGPSPlus tinyGPS; // tinyGPSPlus object to be used throughout
 #define GPS_BAUD 9600 // GPS module's default baud rate
+#define RFID_BAUD 9600 // ID12la baud rate
 
 /////////////////////////////
 // Serial Port Definitions //
 /////////////////////////////
 #include <SoftwareSerial.h>
+// Serial Pins
 #define ARDUINO_GPS_RX 9 // GPS TX, Arduino RX pin
 #define ARDUINO_GPS_TX 8 // GPS RX, Arduino TX pin
 SoftwareSerial ssGPS(ARDUINO_GPS_TX, ARDUINO_GPS_RX);
-#define ID12LA_RX 5 //RFID RX
-#define ID12LA_TX 6 //RFID TX
-
-// Set gpsPort to either ssGPS if using SoftwareSerial or Serial1 if using an
-// Arduino with a dedicated hardware serial port
+#define ID12LA_RX 6 //RFID RX
+#define ID12LA_TX 5 //RFID TX
+SoftwareSerial rf(ID12LA_TX, ID12LA_RX);
+// Ports
 #define gpsPort ssGPS
+#define rfidPort rf
 
 // Define the serial monitor port. On the Uno, and Leonardo this is 'Serial'
 #define SerialMonitor Serial
 
 void setup()
 {
-  SerialMonitor.begin(9600);
+  SerialMonitor.begin(9600);  // Serial initializations
   gpsPort.begin(GPS_BAUD);
-  pinMode(REED_PIN, INPUT_PULLUP); //Pin initializations
+  rfidPort.begin(RFID_BAUD);
+  pinMode(REED_PIN, INPUT_PULLUP);  // Pin initializations
   pinMode(CAMERA_PIN,OUTPUT);
-  digitalWrite(CAMERA_PIN,LOW);
+  digitalWrite(CAMERA_PIN,LOW);   // Make sure shutter transitor is off
   pinMode(POWER_PIN,OUTPUT);
-  digitalWrite(POWER_PIN,LOW);
-  digitalWrite(POWER_PIN,HIGH);
+  digitalWrite(POWER_PIN,HIGH);   // Turn on camera
   SerialMonitor.println("Setting up SD card."); // see if the card is present and can be initialized:
   if (!SD.begin(ARDUINO_USD_CS))
   {
@@ -77,15 +77,15 @@ void setup()
     while (1);
   }
   SPI.begin();      // Initiate  SPI bus
-  SPI.setBitOrder(MSBFIRST);  //Pressure sensor stuff
-  SPI.setClockDivider(SPI_CLOCK_DIV32); //divide 16 MHz to communicate on 500 kHz  
+  SPI.setBitOrder(MSBFIRST);  // Pressure sensor stuff
+  SPI.setClockDivider(SPI_CLOCK_DIV32); // divide 16 MHz to communicate on 500 kHz  
   delay(100);
 }
 
 void loop()
 {
   while(!digitalRead(REED_PIN)){
-      //do nothing until reed switch is triggered
+      // do nothing until reed switch is triggered
   }
     digitalWrite(CAMERA_PIN,HIGH);
     fishCnt+=1;
@@ -118,11 +118,11 @@ byte logGPSData()
     // in (degrees), date, time, and number of satellites.
     logFile.print(fishCnt);
     logFile.print(',');
-    while(!Read_tag(tagRead)){ //keep checking RFID until positive read
+    while(!Read_tag(tagRead)){ // keep checking RFID until positive read
     }
     for(int index=0;index<10;index++)
     {
-    logFile.print(tagID[index],HEX);  //log tagID
+    logFile.print(tagID[index],HEX);  // log tagID
     }
     logFile.print(',');
     logFile.print(tinyGPS.location.lng(), 6);
