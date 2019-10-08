@@ -2,7 +2,7 @@
 #include <SD.h>
 #include <TinyGPS++.h>
 
-#define ARDUINO_USD_CS 10 // uSD card CS pin (pin 10 on SparkFun GPS Logger Shield)
+
 
 /////////////////////////
 // Log File Defintions //
@@ -27,7 +27,8 @@ char * log_col_names[LOG_COLUMN_COUNT] = {
 #define CAMERA_PIN 3
 #define POWER_PIN 2
 #define TEMP_PIN 0
-unsigned long lastLog = 0; // Global var to keep of last time we logged
+#define ARDUINO_USD_CS 10
+unsigned long lastLog = 0;
 int fishCnt = 0;
 bool tagRead = false;
 byte tagID[12];
@@ -63,6 +64,7 @@ void setup()
   digitalWrite(CAMERA_PIN,LOW);
   pinMode(POWER_PIN,OUTPUT);
   digitalWrite(POWER_PIN,LOW);
+  digitalWrite(POWER_PIN,HIGH);
   SerialMonitor.println("Setting up SD card."); // see if the card is present and can be initialized:
   if (!SD.begin(ARDUINO_USD_CS))
   {
@@ -82,7 +84,6 @@ void setup()
 
 void loop()
 {
-  digitalWrite(POWER_PIN,HIGH);
   while(!digitalRead(REED_PIN)){
       //do nothing until reed switch is triggered
   }
@@ -94,7 +95,6 @@ void loop()
       if (logGPSData()) // Log the GPS data
       {
         SerialMonitor.println("GPS logged."); // Print a debug message
-        lastLog = millis(); // Update the lastLog variable
       }
       else // If we failed to log GPS
       { // Print an error, don't update lastLog
@@ -151,7 +151,7 @@ byte logGPSData()
   return 0; // If we failed to open the file, return fail
 }
 
-// printHeader() - prints our eight column names to the top of our log file
+// printHeader() - prints our column names to the top of our log file
 void printHeader()
 {
   File logFile = SD.open(logFileName, FILE_WRITE); // Open the log file
@@ -227,7 +227,6 @@ bool Read_tag(bool tagRead){
         val = val - '0';
         else if( val >= 'A' && val <= 'F')
         val = 10 + val - 'A';
-        
         tagID[index]=val;
       }
     }
