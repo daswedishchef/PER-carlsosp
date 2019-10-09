@@ -12,13 +12,16 @@
   
 # HARDWARE
 ![image](https://github.com/daswedishchef/PER-carlsosp/blob/master/Image2.jpg)
+
+**Current image features some dated hardware**
+
 - Arduino UNO
 - Adatafruit GPS/SD shield
+- Action cam (IR Filter removed)
 - Reed Switch
 - ID12LA RFID
 - ID12LA usb breakout
-- Temperature sensor
-- Pressure Sensor
+- Bar30-r1-rp temp and depth
 
 # OPERATION
 ### CURRENT
