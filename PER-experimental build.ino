@@ -51,8 +51,6 @@ SoftwareSerial rf(ID12LA_TX, ID12LA_RX);
 // Ports
 #define gpsPort ssGPS
 #define rfidPort rf
-
-// Define the serial monitor port. On the Uno, and Leonardo this is 'Serial'
 #define SerialMonitor Serial
 
 void setup()
@@ -200,27 +198,18 @@ void updateFileName()
 //////////////////////
 
 float get_temp_C(){
-    //THis serial print works just fine
-    //Serial.println("New tag read, but not currently fishing.");
-    int reading;
-    reading = analogRead(tempPIN);  
-    // converting that reading to voltage, for 3.3v arduino use 3.3
-    float voltage = reading * 5.0;
-    voltage /= 1024.0;  
-    // now print out the temperature
-    tempC = (voltage - 0.5) * 100 ;  //converting from 10 mv per degree wit 500 mV offset
-    return tempC;                                            
+                                               
 }
 
 bool Read_tag(bool tagRead){
-  if(Serial.available()>=13)      //Make sure all the frame is received
+  if(rfidPort.available()>=13)      //Make sure all the frame is received
   {
-    if(Serial.read()==0x02)       //Check for the start byte = 0x02
+    if(rfidPort.read()==0x02)       //Check for the start byte = 0x02
     {
       tagread=true;                //New tag is read
       for(int index=0;index<sizeof(tagID);index++)
       {
-        byte val=Serial.read();
+        byte val=rfidPort.read();
         
         //convert from ASCII value to value range from 0 to 9 and A to F
         if( val >= '0' && val <= '9')
