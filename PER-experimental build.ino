@@ -1,6 +1,7 @@
+#include <TinyGPS++.h>
+
 #include <SPI.h>
 #include <SD.h>
-#include <TinyGPS++.h>
 
 
 
@@ -48,6 +49,7 @@ SoftwareSerial ssGPS(ARDUINO_GPS_TX, ARDUINO_GPS_RX);
 #define ID12LA_RX 6 //RFID RX
 #define ID12LA_TX 5 //RFID TX
 SoftwareSerial rf(ID12LA_TX, ID12LA_RX);
+#define BAR30_I2C 0x1110110x
 // Ports
 #define gpsPort ssGPS
 #define rfidPort rf
@@ -56,8 +58,8 @@ SoftwareSerial rf(ID12LA_TX, ID12LA_RX);
 void setup()
 {
   SerialMonitor.begin(9600);  // Serial initializations
-  gpsPort.begin(GPS_BAUD);
   rfidPort.begin(RFID_BAUD);
+  gpsPort.begin(GPS_BAUD);
   pinMode(REED_PIN, INPUT_PULLUP);  // Pin initializations
   pinMode(CAMERA_PIN,OUTPUT);
   digitalWrite(CAMERA_PIN,LOW);   // Make sure shutter transitor is off
@@ -74,6 +76,7 @@ void setup()
     Serial.println("initialization failed!");
     while (1);
   }
+  MS5837();
   SPI.begin();      // Initiate  SPI bus
   SPI.setBitOrder(MSBFIRST);  // Pressure sensor stuff
   SPI.setClockDivider(SPI_CLOCK_DIV32); // divide 16 MHz to communicate on 500 kHz  
@@ -197,11 +200,14 @@ void updateFileName()
 // Sensor Functions //
 //////////////////////
 
-float get_temp_C(){
-                                               
+float get_bar30(){
+    if(init()){
+      
+    }                                       
 }
 
 bool Read_tag(bool tagRead){
+  rfidPort.listen();
   if(rfidPort.available()>=13)      //Make sure all the frame is received
   {
     if(rfidPort.read()==0x02)       //Check for the start byte = 0x02
