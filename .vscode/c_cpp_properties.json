@@ -3,14 +3,13 @@
         {
             "name": "Win32",
             "includePath": [
+                "C:\\Users\\Spencer\\Documents\\Arduino\\libraries\\BlueRobotics_MS5837_Library",
                 "C:\\Users\\Spencer\\Documents\\Arduino\\libraries\\TinyGPSPlus-master\\src",
                 "C:\\Program Files (x86)\\Arduino\\libraries\\SD\\src",
                 "C:\\Program Files (x86)\\Arduino\\tools\\**",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\**"
             ],
-            "forcedInclude": [
-                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
-            ],
+            "forcedInclude": [],
             "intelliSenseMode": "msvc-x64"
         }
     ],

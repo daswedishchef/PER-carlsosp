@@ -1,7 +1,8 @@
+#include <MS5837.h>
 #include <TinyGPS++.h>
-
 #include <SPI.h>
 #include <SD.h>
+#include <wire.h>
 
 
 
@@ -33,7 +34,7 @@ unsigned long lastLog = 0;
 int fishCnt = 0;
 bool tagRead = false;
 byte tagID[12];
-
+MS5837 sensor;
 TinyGPSPlus tinyGPS; // tinyGPSPlus object to be used throughout
 #define GPS_BAUD 9600 // GPS module's default baud rate
 #define RFID_BAUD 9600 // ID12la baud rate
@@ -53,11 +54,11 @@ SoftwareSerial rf(ID12LA_TX, ID12LA_RX);
 // Ports
 #define gpsPort ssGPS
 #define rfidPort rf
-#define SerialMonitor Serial
 
 void setup()
 {
-  SerialMonitor.begin(9600);  // Serial initializations
+  Serial.begin(9600);  // Serial initializations
+  Serial.println("initializing box")
   rfidPort.begin(RFID_BAUD);
   gpsPort.begin(GPS_BAUD);
   pinMode(REED_PIN, INPUT_PULLUP);  // Pin initializations
@@ -65,62 +66,62 @@ void setup()
   digitalWrite(CAMERA_PIN,LOW);   // Make sure shutter transitor is off
   pinMode(POWER_PIN,OUTPUT);
   digitalWrite(POWER_PIN,HIGH);   // Turn on camera
-  SerialMonitor.println("Setting up SD card."); // see if the card is present and can be initialized:
+  Serial.println("Setting up SD card."); // see if the card is present and can be initialized:
   if (!SD.begin(ARDUINO_USD_CS))
   {
-    SerialMonitor.println("Error initializing SD card.");
+    Serial.println("Error initializing SD card.");
   }
   updateFileName(); // Each time we start, create a new file, increment the number
   printHeader(); // Print a header at the top of the new file
   if (!SD.begin(10)) {
-    Serial.println("initialization failed!");
+    Serial.println("SD initialization failed!");
     while (1);
   }
-  MS5837();
-  SPI.begin();      // Initiate  SPI bus
-  SPI.setBitOrder(MSBFIRST);  // Pressure sensor stuff
-  SPI.setClockDivider(SPI_CLOCK_DIV32); // divide 16 MHz to communicate on 500 kHz  
-  delay(100);
+  //Bar30 temperature and pressure sensor set up
+  Wire.begin();
+  sensor.setModel(MS5837::MS5837_30BA);
+  sensor.setFluidDensity(997);
+  while(!sensor.init()){
+    Serial.print("BAR30 initialization failed!");
+  }
 }
 
 void loop()
 {
-  while(!digitalRead(REED_PIN)){
-      // do nothing until reed switch is triggered
-  }
-    digitalWrite(CAMERA_PIN,HIGH);
-    fishCnt+=1;
-    tinyGPS.encode(gpsPort.read());
-    if (tinyGPS.location.isUpdated()) // If the GPS data is vaild
-    {
-      if (logGPSData()) // Log the GPS data
+  if(digitalRead(REED_PIN)){
+    while(!Read_tag(tagRead)){
+      Serial.println("Scan tag of fish"); // keep checking RFID until positive read
+    }
+    while(!digitalRead(REED_PIN)){} // do nothing until reed switch is released again
+      digitalWrite(CAMERA_PIN,HIGH);
+      fishCnt+=1;
+      tinyGPS.encode(gpsPort.read());
+      if (tinyGPS.location.isUpdated()) // If the GPS data is vaild
       {
-        SerialMonitor.println("GPS logged."); // Print a debug message
+        if (logGPSData()) // Log the GPS data
+        {
+          Serial.println("GPS logged.");
+        }
+        else // If we failed to log GPS
+        { // Print an error, don't update lastLog
+          Serial.println("Failed to log new GPS data.");
+        }
       }
-      else // If we failed to log GPS
-      { // Print an error, don't update lastLog
-        SerialMonitor.println("Failed to log new GPS data.");
+      else // If GPS data isn't valid
+      {
+        Serial.print("No GPS data. Sats: ");
+        Serial.println(tinyGPS.satellites.value());
       }
-    }
-    else // If GPS data isn't valid
-    {
-      // Print a debug message. Maybe we don't have enough satellites yet.
-      SerialMonitor.print("No GPS data. Sats: ");
-      SerialMonitor.println(tinyGPS.satellites.value());
-    }
+  }
 }
 
 byte logGPSData()
 {
   File logFile = SD.open(logFileName, FILE_WRITE); // Open the log file
 
-  if (logFile)
-  { // Print longitude, latitude, altitude (in feet), speed (in mph), course
-    // in (degrees), date, time, and number of satellites.
+  if (logFile){ 
     logFile.print(fishCnt);
     logFile.print(',');
-    while(!Read_tag(tagRead)){ // keep checking RFID until positive read
-    }
     for(int index=0;index<10;index++)
     {
     logFile.print(tagID[index],HEX);  // log tagID
@@ -142,9 +143,9 @@ byte logGPSData()
     logFile.print(',');
     logFile.print(tinyGPS.satellites.value());
     logFile.print(',');
-    logFile.print(get_temp_C());
+    logFile.print(sensor.temperature());
     logFile.print(',');
-    logFile.print()
+    logFile.print(sensor.depth());
     logFile.println();
     logFile.close();
     return 1; // Return success
@@ -188,23 +189,17 @@ void updateFileName()
     }
     else // Otherwise:
     {
-      SerialMonitor.print(logFileName);
-      SerialMonitor.println(" exists"); // Print a debug statement
+      Serial.print(logFileName);
+      Serial.println(" exists"); // Print a debug statement
     }
   }
-  SerialMonitor.print("File name: ");
-  SerialMonitor.println(logFileName); // Debug print the file name
+  Serial.print("File name: ");
+  Serial.println(logFileName); // Debug print the file name
 }
 
 //////////////////////
 // Sensor Functions //
 //////////////////////
-
-float get_bar30(){
-    if(init()){
-      
-    }                                       
-}
 
 bool Read_tag(bool tagRead){
   rfidPort.listen();
@@ -212,7 +207,7 @@ bool Read_tag(bool tagRead){
   {
     if(rfidPort.read()==0x02)       //Check for the start byte = 0x02
     {
-      tagread=true;                //New tag is read
+      tagRead=true;                //New tag is read
       for(int index=0;index<sizeof(tagID);index++)
       {
         byte val=rfidPort.read();
@@ -227,10 +222,10 @@ bool Read_tag(bool tagRead){
     }
     else
     {
-      tagread=false;                //Discard and skip
+      tagRead=false;                //Discard and skip
     }
   }
-  if(tagread==true){
+  if(tagRead==true){
       return true;                  //New tag is read
   }              
 }
